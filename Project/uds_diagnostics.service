@@ -1,0 +1,16 @@
+[Unit]
+Description=UDS Diagnostics Application
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/home/mobase/dfs/demo/udsoncan
+ExecStart=/home/mobase/dfs/demo/udsoncan/dist/uds_diagnostics
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
