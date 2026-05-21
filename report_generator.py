@@ -159,8 +159,15 @@ def get_status(actual_data, expected_response_data):
     if not expected_response_data:
         return "Fail", "Expected response not specified"
 
-    actual_data = [b.strip().upper() for b in actual_data if isinstance(b, str)]
-    expected_data = [b.strip().upper() for b in expected_response_data if isinstance(b, str)]
+    #actual_data = [b.strip().upper() for b in actual_data if isinstance(b, str)]
+    actual_data = [
+        str(b).replace("0x","").replace("0X","").strip().upper()
+        for b in actual_data
+    ]
+    expected_data = [
+        str(b).replace("0x","").replace("0X","").strip().upper()
+        for b in actual_data
+    ]
 
     # ✅ Match full byte-by-byte
     if actual_data == expected_data:
@@ -188,7 +195,7 @@ def parse_line(line):
         return None
     return {
         "timestamp": timestamp,
-        "can_id": parts[2].upper(),
+        "can_id": parts[2].replace("0x", "").replace("0x", "").upper().lstrip("0"),
         "direction": parts[3],
         "data_bytes": parse_data_bytes(line),
         "raw": line
@@ -214,8 +221,14 @@ def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
     start_ts, end_ts = None, None
     base_datetime = None
 
-    allowed_tx_ids = set(f"{id:X}" for id in allowed_tx_ids)
-    allowed_rx_ids = set(f"{id:X}" for id in allowed_rx_ids)
+    allowed_tx_ids = {
+         str(i).strip().replace("0x","").replace("0X", "").upper().lstrip("0")
+         for i in allowed_tx_ids
+    }
+    allowed_tx_ids = {
+         str(i).strip().replace("0x","").replace("0X", "").upper().lstrip("0")
+         for i in allowed_rx_ids
+    }
 
     with open(asc_file_path, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
@@ -243,7 +256,9 @@ def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
         data = msg["data_bytes"]
 
         # 🟦 Tx: Handle Request
-        if direction == "Tx" and can_id in {"706"}:
+        if direction.lower() == "tx" and can_id in allowed_tx_ids:
+            if not data:
+                continue
             pci_type = data[0].upper()
 
             if pci_type == "10":  # First Frame of Multi-Frame Request
@@ -297,7 +312,7 @@ def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
                     #print(f"✅ Single-frame Request TC={tc_id} matched")
 
         # ◀️ Rx: Handle Response
-        elif direction == "Rx" and can_id == "70E" and current_request:
+        elif direction .lower() == "rx" and can_id in allowed_rx_ids and current_request:
             pci_type = data[0].upper()
 
             if pci_type == "30":
