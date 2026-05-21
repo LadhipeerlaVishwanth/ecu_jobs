@@ -16,6 +16,32 @@ ALLOWED_IDS = set(
 #DESCRIPTION_MAP = {}
 #ALLOWED_IDS={"7A6","7AE"}
 
+def clean_expected_response_report(resp):
+
+    if not resp:
+        return []
+
+    raw_bytes = resp.strip().split()
+
+    cleaned = []
+
+    for i, b in enumerate(raw_bytes):
+
+        b = b.upper().replace("0X", "")
+
+        if b == "AA":
+            continue
+
+        if i == 0 and b in ["10", "21", "22", "06", "07", "08"]:
+            continue
+
+        if i == 1 and raw_bytes[0].upper().replace("0X", "") == "10":
+            continue
+
+        cleaned.append(b)
+
+    return cleaned
+
 def load_description_map(txt_file_path):
     desc_map = {}
     with open(txt_file_path, "r", encoding="utf-8") as f:
@@ -32,7 +58,8 @@ def load_description_map(txt_file_path):
             sub = parts[3].strip().replace("0x", "").upper()
             expected_response_data = parts[4].strip()
             # Convert expected response data (e.g., "0x10 0x0B 0x62") to byte list
-            expected_bytes = [b.replace("0x", "").upper() for b in expected_response_data.split() if b]
+            #expected_bytes = [b.replace("0x", "").upper() for b in expected_response_data.split() if b]
+            expected_bytes = clean_expected_response_report(expected_response_data)
             format_type = parts[7].strip().capitalize() if len(parts) > 7 else "Hex"
             key = (sid, sub)
             value = (description, tc_id, expected_bytes, format_type)
@@ -150,28 +177,41 @@ def get_failure_reason(nrc):
     return reasons.get(nrc.upper(), f"Unknown NRC: {nrc}")
 
 def get_status(actual_data, expected_response_data):
-    """
-    Determines Pass/Fail by comparing full actual vs expected response.
-    Handles negative responses with NRCs too.
-    """
+
     if not actual_data:
         return "Fail", "No response received"
+
     if not expected_response_data:
         return "Fail", "Expected response not specified"
 
-    actual_data = [b.strip().upper() for b in actual_data if isinstance(b, str)]
-    expected_data = [b.strip().upper() for b in expected_response_data if isinstance(b, str)]
+    # Convert int/str → HEX STRING
+    actual_data_t = [
+        f"{b:02X}" if isinstance(b, int) else str(b).strip().upper()
+        for b in actual_data
+    ]
 
-    # ✅ Match full byte-by-byte
-    if actual_data == expected_data:
+    expected_data_t = [
+        f"{b:02X}" if isinstance(b, int) else str(b).strip().upper()
+        for b in expected_response_data
+    ]
+
+    # Remove padding
+    clean_resp_t = remove_trailing_padding(actual_data_t, "00")
+    actual_data = remove_trailing_padding(clean_resp_t, "AA")
+
+    E_clean_resp_t = remove_trailing_padding(expected_data_t, "00")
+    expected_data = remove_trailing_padding(E_clean_resp_t, "AA")
+
+    # Prefix comparison
+    if actual_data[:len(expected_data)] == expected_data:
         return "Pass", ""
 
-    # 🟥 Negative Response Handling
-    if len(actual_data) >= 4 and actual_data[1] == "7F":
-        nrc = actual_data[3]
+    # Negative response
+    if len(actual_data) >= 3 and actual_data[0] == "7F":
+        nrc = actual_data[2]
         return "Fail", f"Negative Response (0x{nrc}: {get_failure_reason(nrc)})"
 
-    return "Fail", "Response mismatch"
+    return "Fail", f"Response mismatch Expected={expected_data} Actual={actual_data}"
 
 
 
@@ -188,7 +228,7 @@ def parse_line(line):
         return None
     return {
         "timestamp": timestamp,
-        "can_id": parts[2].upper(),
+        "can_id": parts[2].upper().replace("X", "").lstrip("0"),
         "direction": parts[3],
         "data_bytes": parse_data_bytes(line),
         "raw": line
@@ -197,6 +237,8 @@ def parse_line(line):
 
 
 def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
+    
+
     messages_by_tc = defaultdict(list)
     current_request = None
     pending_first_frame = None
@@ -234,7 +276,8 @@ def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
         if not line or not re.match(r"^\d+\.\d+", line):
             continue
 
-        msg = parse_line(line)  # ✅ This was incorrectly indented before
+        msg = parse_line(line)
+        print(msg)  # ✅ This was incorrectly indented before
         if not msg or msg["can_id"] not in ALLOWED_IDS:
             continue
 
@@ -314,7 +357,7 @@ def parse_asc_file(asc_file_path, allowed_tx_ids, allowed_rx_ids):
             else:
                 if pci_type == "10":  # First frame of multi-frame response
                     total_resp_len = int(data[1], 16)
-                    response_buffer = data[:]  # include full frame including PCI
+                    response_buffer = data[2:]  # include full frame including PCI
                     collected_len = len(data) - 2  # remove PCI and LEN from payload count
                     awaiting_response = True
                     continue
@@ -518,6 +561,8 @@ def generate_html_report(messages_by_tc, output_path, asc_filename, start_ts, en
     """
 
     for tc_id, steps in messages_by_tc.items():
+        if not steps:
+            continue
         status = steps[0]['status']
         status_class = 'pass' if status == 'Pass' else 'fail' if status == 'Fail' else 'pending'
         html += f"<div class='case-block {status_class}-case'>\n"
@@ -599,7 +644,7 @@ def generate_html_report(messages_by_tc, output_path, asc_filename, start_ts, en
 
     print(f"✅ UDS HTML Report generated at:\n{output_path}\n")
 
-def generate_report(asc_file_path, txt_file_path, output_html_file, allowed_tx_ids, allowed_rx_ids, ecu_info_data=None, target_ecu=None):
+def generate_report(asc_file_path, txt_file_path, output_html_file, allowed_tx_ids, allowed_rx_ids, ecu_info_data=None, target_ecu=None,testcase_results=None):
     global DESCRIPTION_MAP
     DESCRIPTION_MAP = load_description_map(txt_file_path)
     get_description.used_tc_ids = set()

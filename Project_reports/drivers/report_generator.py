@@ -545,6 +545,8 @@ def generate_html_report(messages_by_tc, output_path, asc_filename, start_ts, en
     """
 
     for tc_id, steps in messages_by_tc.items():
+        print(tc_id)
+        print(steps)
         status = steps[0]['status']
         status_class = 'pass' if status == 'Pass' else 'fail' if status == 'Fail' else 'pending'
         html += f"<div class='case-block {status_class}-case'>\n"
@@ -630,11 +632,13 @@ def generate_report(asc_file_path, txt_file_path, output_html_file, allowed_tx_i
     global DESCRIPTION_MAP
     DESCRIPTION_MAP = load_description_map(txt_file_path)
     get_description.used_tc_ids = set()
-
+    
+    print("ASC_FILE:",asc_file_path)
     messages_by_tc, start_ts, end_ts, base_datetime = parse_asc_file(
         asc_file_path, allowed_tx_ids, allowed_rx_ids
     )
-
+    print("TOTAL_TESTCASES:",len(messages_by_tc))
+    print("TESTCASE_IDS:",list(messages_by_tc.keys())
     report_path = output_html_file
 
     generate_html_report(

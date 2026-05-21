@@ -825,6 +825,7 @@ class UDSClient:
         time.sleep(1.5)
 
         full_log_path = self.can_logger.get_log_path() or "N/A"
+        print("Debug_log:",full_log_path)
         can_log_file = os.path.basename(full_log_path)
 
         # Confirm log file presence
