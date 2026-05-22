@@ -42,28 +42,11 @@ def load_description_map(txt_file_path):
     return desc_map
 
 
-#def parse_data_bytes(line):
-#    match = re.search(r'd\s+\d+\s+((?:[0-9A-Fa-f]{2}(?:\s+|$))+)', line)
-#    if match:
-#        return match.group(1).strip().split()
-#    return []
 def parse_data_bytes(line):
-    parts = line.split()
-    try:
-        dlc_index = 8
-        if len(parts)<= dlc_index:
-            return[]
-        dlc = int(parts[dlc_index])
-        start = dlc_index+1
-        end = start + dlc
-        data=[]
-        for x in parts[start:end]:
-            if re.fullmatch(r"[0-9A-Fa-f]{2}",x):
-                data.append(x.upper())
-                return data
-    
-    except Exception:
-        return[]
+    match = re.search(r'd\s+\d+\s+((?:[0-9A-Fa-f]{2}(?:\s+|$))+)', line)
+    if match:
+        return match.group(1).strip().split()
+    return []
 
 
 
@@ -183,7 +166,7 @@ def get_status(actual_data, expected_response_data):
     ]
     expected_data = [
         str(b).replace("0x","").replace("0X","").strip().upper()
-        for b in expected_response_data
+        for b in actual_data
     ]
 
     # ✅ Match full byte-by-byte
