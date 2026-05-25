@@ -1,0 +1,6 @@
+#TC_ID/PC_ID , Testcase_Description , Service_ID , SubService_ID , Expected_Response_Data , Write_Data , Addressing , Format , Status_Mask , Communication_Type , controltype
+TC_ID-590 , SendKey_ASK_Send(27 12) , 0x27 , 0x12 , 03 7F 27 35 00 00 00 00 ,    , Physical , Hex ,    ,    ,   
+TC_ID-588 , Incorrect message length(27 11 13) , 0x27 , 0x1112 , 03 7F 27 13 00 00 00 00 ,    , Physical , Hex ,    ,    ,   
+TC_ID-587 , Sub function not supported(out ofrange)(27 56) , 0x27 , 0x56 , 03 7F 27 12 00 00 00 00 ,    , Physical , Hex ,    ,    ,   
+TC_ID-585 , RequestSeed_ASK_Request(27 11) , 0x27 , 0x11 , 0x67 ,    , Physical , Hex ,    ,    ,   
+TC_ID-573 , Start Default session , 0x10 , 0x01 , 06 50 01 00 32 01 F4 00 ,    , Physical , Hex ,    ,    ,   
