@@ -2,7 +2,7 @@
 from PyInstaller.utils.hooks import collect_data_files
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('/home/mobase/Git/Vishwanth/ecu_jobs/Project_reports/venv/lib/python3.13/site-packages/board_imports.json', '.'), ('/home/mobase/Git/Vishwanth/ecu_jobs/Project_reports/venv/lib/python3.13/site-packages/microcontroller_imports.json', '.')]
+datas = [('/home/mobase/Git/Vishwanth/ecu_jobs/ecu_jobs/Project_reports/venv/lib/python3.13/site-packages/board_imports.json', '.'), ('/home/mobase/Git/Vishwanth/ecu_jobs/ecu_jobs/Project_reports/venv/lib/python3.13/site-packages/microcontroller_imports.json', '.')]
 binaries = []
 hiddenimports = ['board', 'RPi', 'RPi.GPIO', 'board', 'adafruit_blinka', 'adafruit_blinka.board', 'adafruit_platformdetect', 'adafruit_platformdetect.constants', 'busio', 'adafruit_ssd1306', 'PIL', 'PIL.Image', 'PIL.ImageDraw', 'PIL.ImageFont', 'can', 'can.interfaces.socketcan', 'can.io.asc', 'isotp', 'udsoncan', 'udsoncan.client', 'udsoncan.connections', 'udsoncan.configs', 'udsoncan.services', 'drivers', 'drivers.config_loader', 'drivers.oled_display', 'drivers.button_input', 'drivers.uds_client', 'drivers.transfer_file', 'drivers.Parse_handler', 'drivers.can_logger', 'drivers.report_generator']
 datas += collect_data_files('microcontroller')
